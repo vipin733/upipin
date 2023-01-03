@@ -1,11 +1,64 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '../styles/Home.module.css'
+import { useEffect, useState } from 'react'
+import { cryptPin, _csrfTokenCreate, _csrfTokenDecode } from '../lib/hashing'
+import { _validatePin } from '../lib/validator'
 
-const inter = Inter({ subsets: ['latin'] })
 
-export default function Home() {
+
+const allPins = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+const Home =({token}) => {
+
+  const [isHide, setIsHide] = useState(false)
+  const [codes, setCodes] = useState([])
+
+  useEffect(() => { 
+    const text = document.getElementById("recipient");
+    const limit = 13;
+    const truncated = text.innerText.substring(0, limit) + "...";
+    text.innerText = truncated;
+  }, [])
+
+  const _addBorder = (length) => {
+    for (let i = 1; i <= 4; i++) {
+      const borders = document.getElementById(`border${i}`);
+      if (length === i) {
+        borders.style.backgroundColor = "gray";
+      } else {
+        borders.style.backgroundColor = "lightgray";
+      }
+    }
+  }
+
+  const _pinClick = key => {
+    let length = codes.length
+    if (length == 4) {
+      return
+    }
+
+    let pins = [...codes, ...[key]]
+    length = pins.length
+    _addBorder(length)
+    setCodes(pins)
+  }
+
+  const _deleteInput = () => {
+    let pins = [...codes]
+    pins.pop()
+    setCodes(pins)
+
+    let length = pins.length
+    _addBorder(length)
+  }
+
+  const _submit = () => {
+    let pinstr = codes.toLocaleString()
+    let pin = cryptPin(pinstr)
+    document.getElementById("pin").value = pin
+    _validatePin(codes)
+  }
+  
+
   return (
     <>
       <Head>
@@ -14,110 +67,80 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
+
+      <div className="top">
+        <p>ICICI Bank</p>
+        <p>XXXXXX65</p>
+      </div>
+
+      <div className="header">
+        <p>Sending &#8377; 100.00</p>
+        <div>
+          <p id="recipient">To: Vivek Kumar Singh</p>
+          <i className="fa-solid fa-chevron-down"></i>
+        </div>
+      </div>
+
+      <div className="body">
+        <p>ENTER 4-DIGIT UPI PIN</p>
+        <div className="input-number">
+          <div id="input">
+            {
+              codes.map((code, index) => {
+                return <p className="code" key={index}>{isHide ? "•" : code}</p>
+              })
+            }
           </div>
         </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
+        <div className="input-border">
+          <div id="border1"></div>
+          <div id="border2"></div>
+          <div id="border3"></div>
+          <div id="border4"></div>
         </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
+        <div className="toggleText">
+          <i className="fa-solid fa-eye"></i>
+          <p onClick={() => setIsHide(!isHide)} id="toggleText">{isHide ? "SHOW" : "HIDE"}</p>
         </div>
-      </main>
+        <p>
+          <i className="fa-solid fa-circle-info"></i> You are transferring money from
+          your account to Vivek Kumar Singh
+        </p>
+      </div>
+
+      <div className="keypad">
+        {
+          allPins.map((pins, index) => {
+            return (
+              <div key={index}>
+                {
+                  pins.map((pin, pindex) => {
+                    return <button key={pindex} onClick={() => _pinClick(pin)}>{pin}</button>
+                  }) 
+                }
+              </div>
+            )
+          })
+        }
+        <div>
+          <i className="fa-solid fa-delete-left" onClick={() => _deleteInput()}></i>
+          <button onClick={() => _pinClick(0)}>0</button>
+          <i className="fa-solid fa-circle-check" onClick={() => _submit()}></i>
+        </div>
+      </div>
+
+      <form action='/api/pin' method='post' id='form'>
+        <input type={"hidden"} name="_csrf" value={token} />
+        <input type={"hidden"} name="pin" id='pin' value={""} />
+      </form>
+
     </>
   )
 }
+
+Home.getInitialProps = async ({req}) => {
+  let token = _csrfTokenCreate(req)
+  return { token }
+}
+
+export default Home
