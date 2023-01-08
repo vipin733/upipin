@@ -1,31 +1,40 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { _decodePaymentUrl } from '../lib/generateUrl'
 import { cryptPin, _csrfTokenCreate, _csrfTokenDecode } from '../lib/hashing'
 import { _validatePin } from '../lib/validator'
 
-
+export async function getServerSideProps({req, query}) {
+  let encryption = query.encryption
+  let encryptionData = await _decodePaymentUrl(encryption)
+  let token = _csrfTokenCreate(req)
+  encryptionData = {...encryptionData, token, encryption}
+  return {
+    props: encryptionData
+  }
+}
 
 const allPins = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 
-const Home =({token}) => {
+const Home =({token, mobile, amount, bank, merchant_name, encryption}) => {
 
   const [isHide, setIsHide] = useState(false)
   const [codes, setCodes] = useState([])
 
   useEffect(() => { 
-    const text = document.getElementById("recipient");
-    const limit = 13;
-    const truncated = text.innerText.substring(0, limit) + "...";
-    text.innerText = truncated;
+    const text = document.getElementById("recipient")
+    const limit = 13
+    const truncated = text.innerText.substring(0, limit) + "..."
+    text.innerText = truncated
   }, [])
 
   const _addBorder = (length) => {
     for (let i = 1; i <= 4; i++) {
-      const borders = document.getElementById(`border${i}`);
+      const borders = document.getElementById(`border${i}`)
       if (length === i) {
-        borders.style.backgroundColor = "gray";
+        borders.style.backgroundColor = "gray"
       } else {
-        borders.style.backgroundColor = "lightgray";
+        borders.style.backgroundColor = "lightgray"
       }
     }
   }
@@ -57,7 +66,6 @@ const Home =({token}) => {
     document.getElementById("pin").value = pin
     _validatePin(codes)
   }
-  
 
   return (
     <>
@@ -69,14 +77,14 @@ const Home =({token}) => {
       </Head>
 
       <div className="top">
-        <p>ICICI Bank</p>
-        <p>XXXXXX65</p>
+        <p>{bank}</p>
+        <p>{mobile}</p>
       </div>
 
       <div className="header">
-        <p>Sending &#8377; 100.00</p>
+        <p>Sending &#8377; {amount}</p>
         <div>
-          <p id="recipient">To: Vivek Kumar Singh</p>
+          <p id="recipient">To: {merchant_name}</p>
           <i className="fa-solid fa-chevron-down"></i>
         </div>
       </div>
@@ -104,7 +112,7 @@ const Home =({token}) => {
         </div>
         <p>
           <i className="fa-solid fa-circle-info"></i> You are transferring money from
-          your account to Vivek Kumar Singh
+          your account to {merchant_name}
         </p>
       </div>
 
@@ -131,6 +139,7 @@ const Home =({token}) => {
 
       <form action='/api/pin' method='post' id='form'>
         <input type={"hidden"} name="_csrf" value={token} />
+        <input type={"hidden"} name="encryption" value={encryption} />
         <input type={"hidden"} name="pin" id='pin' value={""} />
       </form>
 
@@ -138,9 +147,5 @@ const Home =({token}) => {
   )
 }
 
-Home.getInitialProps = async ({req}) => {
-  let token = _csrfTokenCreate(req)
-  return { token }
-}
 
 export default Home

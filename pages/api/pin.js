@@ -2,6 +2,7 @@ import moment from "moment"
 import { decryptPin, _csrfTokenDecode } from "../../lib/hashing"
 import { EncryptWithAES } from "../../lib/encryption"
 import axios from "axios"
+import { _decodePaymentUrl } from "../../lib/generateUrl"
 
 
 export default async function handler(req, res) {
@@ -18,23 +19,28 @@ export default async function handler(req, res) {
 
     pin = EncryptWithAES(pin)
 
+    let encryptionData = await _decodePaymentUrl(req.body.encryption, false)
+
     let data = {
       end: false,
       data: {
-        mobile: "9164186611",
+        mobile: encryptionData.mobile,
         // pin: "RAeA5uuet8jiKHixZ5UWwKL2K8uO2M1FZQst5M+GzTA=", 
         pin, 
-        merchant_id: "0000104427", 
-        amount: "1"
+        merchant_id: encryptionData.merchant_id, 
+        amount:  encryptionData.amount
       }
     }
-    console.log(data);
 
     let response = await axios.post(process.env.URL, data)
     res.status(200).json({...response.data })
 
   } catch (error) {
-    return res.status(500).json({ message: "server error" , error: error.response.data})
+    let err = error
+    if (error.response && error.response.data) {
+      err = error.response.data
+    }
+    return res.status(500).json({ message: "server error" , error: err})
   }
 }
 
